@@ -41,15 +41,26 @@ def whois_service():
     #Start the main service loop
     while True:
         #Receive the data stream less than the MAX_QUERY_SIZE
-        data_received = socket_connection.recv(1024).decode()
+        data_received = socket_connection.recv(MAX_QUERY_SIZE).decode()
         if not data_received:
-            #If we do not receive any data then we need to break
+            #If we do not receive any data then we need to break out the infinite while loop.
+            #TODO Find a better way to do this
             break
+
+        #TODO Delete this before turning the assignment in
         print("Data from connected user: " + str(data_received))
 
-        #TODO We would look up if we have the results and then send them back to the client
+        #TODO We would look up if we have the results of what we have stored in data_received
+        # and then send them back to the client
         socket_connection.send(data_received.encode())
-        LOGFILE = "[" + strftime("%d/%m/%Y %H:%M:%S") + "] " + socket_address[0] + " - "
+
+        #Write the timestamp and IP address of who accessed the service to the log file
+        try:
+            file = open(LOGFILE, 'a+')
+            file.write("[" + strftime("%Y/%m/%d %H:%M:%S") + "] " + socket_address[0] + "\r\n")
+            file.close()
+        except IOError:
+            print("There was a problem writing to the logfile.")
 
     socket_connection.close
 
