@@ -13,3 +13,14 @@ CentOS - `yum install python-pip`
 OSX - `brew cask install docker`
 
 CentOS - `sudo yum install docker`
+
+---
+### pip packages
+`pip install IPy`
+`pip install redis`
+
+---
+### Install redis
+OSX - `brew install redis`
+CentOS - `yum install redis`
+         `systemctl enable redis`
