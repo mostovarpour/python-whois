@@ -23,5 +23,4 @@ CentOS - `sudo yum install docker`
 ### Install redis
 OSX - `brew install redis`
 
-CentOS - `yum install redis`
-         `systemctl enable redis`
+CentOS - `yum install redis` then `systemctl enable redis` to start redis at boot
