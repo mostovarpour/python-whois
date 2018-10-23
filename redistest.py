@@ -10,26 +10,37 @@ r = redis.StrictRedis(host=redis_host, port=redis_port,
 
 def insert_ip_into_redis(query_in):
     try:
-        r.set('key:ip', query_in)
+        r.set(query_in, query_in)
     except Exception as e:
         print(e)
+
 
 def insert_domain_into_redis(query_in):
     try:
-        r.set('key:domain', query_in)
+        r.set(query_in, query_in)
     except Exception as e:
         print(e)
 
 
-def lookup_from_redis(domain):
+def lookup_from_redis(query_in):
     try:
-        domain = r.get(domain)
-        print(domain)
-        return domain
+        keys = r.keys(query_in)
+        for key in keys:
+            type = r.type(key)
+            val = r.get(key)
+            return val
     except Exception as e:
         print(e)
+
+
 
 
 if __name__ == '__main__':
-    insert_into_redis('test.com')
-    lookup_from_redis('test.com')
+    insert_ip_into_redis('10.0.0.3')
+    insert_domain_into_redis('test.com')
+    result = lookup_from_redis('test.com')
+    print(result)
+
+    # ips = r.scan('keys:ip')
+    # for i in ips:
+    #     print i
