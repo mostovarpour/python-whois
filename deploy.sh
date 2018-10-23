@@ -99,6 +99,7 @@ echo "server:
         for i in `seq 1001 1100`; do
             echo "local-data: \"r"$i".test.com. IN A 127.0.0.1\"" >> /etc/unbound/unbound.conf
         done
+        echo "Successfully added another 100 A records."
       ;;
     m)
       echo "-m was triggered!" >&2
