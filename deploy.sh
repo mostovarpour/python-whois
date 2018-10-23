@@ -67,7 +67,7 @@ echo "server:
 
         #Add the 1000 A records
         echo "local-data: \"test.com. IN A 127.0.0.1\"" >> /etc/unbound/unbound.conf
-        for i in `seq 1 10000`; do
+        for i in `seq 1 1000`; do
             echo "local-data: \"r"$i".test.com. IN A 127.0.0.1\"" >> /etc/unbound/unbound.conf
         done
 
