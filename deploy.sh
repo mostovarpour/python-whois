@@ -39,29 +39,36 @@ while getopts ":i :u :m" opt; do
         # Install Unbound
         yum install -y unbound
 
-        # Configuration
-        sed -i 's|# interface: 0.0.0.0$|interface: 127.0.0.1|' /etc/unbound/unbound.conf
-        sed -i 's|# hide-identity: no|hide-identity: yes|' /etc/unbound/unbound.conf
-        sed -i 's|# hide-version: no|hide-version: yes|' /etc/unbound/unbound.conf
-        sed -i 's|use-caps-for-id: no|use-caps-for-id: yes|' /etc/unbound/unbound.conf
+echo "server:
+    directory: \"/etc/unbound\"
+    username: unbound
+    # make sure unbound can access entropy from inside the chroot.
+    # e.g. on linux the use these commands (on BSD, devfs(8) is used):
+    #      mount --bind -n /dev/random /etc/unbound/dev/random
+    # and  mount --bind -n /dev/log /etc/unbound/dev/log
+    chroot: \"/etc/unbound\"
+    # logfile: \"/etc/unbound/unbound.log\"  #uncomment to use logfile.
+    pidfile: \"/etc/unbound/unbound.pid\"
+    # verbosity: 1        # uncomment and increase to get more logging.
+    # listen on all interfaces, answer queries from the local subnet.
+    interface: 127.0.0.1
+    access-control: 10.0.0.0/8 allow
+    access-control: 2001:DB8::/64 allow" > /etc/unbound/unbound.conf
 
-        # DNS Rebinding fix
-        echo "private-address: 10.0.0.0/8
-            private-address: 172.16.0.0/12
-            private-address: 192.168.0.0/16
-            private-address: 169.254.0.0/16
-            private-address: fd00::/8
-            private-address: fe80::/10
-            private-address: 127.0.0.0/8
-            private-address: ::ffff:0:0/96" >> /etc/unbound/unbound.conf
-        
+        # Configuration
+        # sed -i 's|# interface: 0.0.0.0$|interface: 127.0.0.1|' /etc/unbound/unbound.conf
+        # sed -i 's|# hide-identity: no|hide-identity: yes|' /etc/unbound/unbound.conf
+        # sed -i 's|# hide-version: no|hide-version: yes|' /etc/unbound/unbound.conf
+        # sed -i 's|use-caps-for-id: no|use-caps-for-id: yes|' /etc/unbound/unbound.conf
+
         # enable our test.com zone 
         echo "# Custom test.com zone configured below" >> /etc/unbound/unbound.conf
         echo "local-zone: \"test.com\" static" >> /etc/unbound/unbound.conf
 
         #Add the 1000 A records
+        echo "local-data: \"test.com. IN A 127.0.0.1\"" >> /etc/unbound/unbound.conf
         for i in `seq 1 10000`; do
-            echo "local-data: \"r"$i".test.com IN A 127.0.0.1" >> /etc/unbound/unbound.conf
+            echo "local-data: \"r"$i".test.com. IN A 127.0.0.1\"" >> /etc/unbound/unbound.conf
         done
 
         if pgrep systemd-journal; then
@@ -90,7 +97,7 @@ while getopts ":i :u :m" opt; do
     u)
         #Add the 100 A records if the -u flag was given
         for i in `seq 1001 1100`; do
-            echo "local-data: \"r"$i".test.com IN A 127.0.0.1" >> /etc/unbound/unbound.conf
+            echo "local-data: \"r"$i".test.com. IN A 127.0.0.1\"" >> /etc/unbound/unbound.conf
         done
       ;;
     m)
