@@ -20,7 +20,7 @@ CentOS - `sudo yum install docker`
 `pip install redis`
 
 ---
-### Install redis
-OSX - `brew install redis`
+### Install mysql
+OSX - `brew install mysql`
 
-CentOS - `yum install redis` then `systemctl enable redis` to start redis at boot
+CentOS - `yum install mysql` then `systemctl enable mysql` to start redis at boot
