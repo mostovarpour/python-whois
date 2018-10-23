@@ -15,12 +15,20 @@ OSX - `brew cask install docker`
 CentOS - `sudo yum install docker`
 
 ---
-### pip packages
-`pip install IPy`
-`pip install redis`
 
----
-### Install mysql
-OSX - `brew install mysql`
+### Basic Setup on a CentOS Server
+`sudo yum -y update && sudo yum install -y git wget bind-utils tmux python-pip && git clone https://github.com/mostovarpour/python-whois.git`
 
-CentOS - `yum install mysql` then `systemctl enable mysql` to start redis at boot
+`wget https://dev.mysql.com/get/mysql80-community-release-el7-1.noarch.rpm`
+
+`sudo rpm -ivh https://dev.mysql.com/get/mysql80-community-release-el7-1.noarch.rpm`
+
+`sudo yum install mysql-server`
+
+If you need to find the root password use this:
+
+`sudo grep 'temporary password' /var/log/mysqld.log`
+
+`sudo systemctl start mysqld`
+
+`sudo pip install pymysql`

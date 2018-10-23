@@ -39,27 +39,21 @@ while getopts ":i :u :m" opt; do
         # Install Unbound
         yum install -y unbound
 
-echo "server:
-    directory: \"/etc/unbound\"
-    username: unbound
-    # make sure unbound can access entropy from inside the chroot.
-    # e.g. on linux the use these commands (on BSD, devfs(8) is used):
-    #      mount --bind -n /dev/random /etc/unbound/dev/random
-    # and  mount --bind -n /dev/log /etc/unbound/dev/log
-    chroot: \"/etc/unbound\"
-    # logfile: \"/etc/unbound/unbound.log\"  #uncomment to use logfile.
-    pidfile: \"/etc/unbound/unbound.pid\"
-    # verbosity: 1        # uncomment and increase to get more logging.
-    # listen on all interfaces, answer queries from the local subnet.
-    interface: 127.0.0.1
-    access-control: 10.0.0.0/8 allow
-    access-control: 2001:DB8::/64 allow" > /etc/unbound/unbound.conf
-
-        # Configuration
-        # sed -i 's|# interface: 0.0.0.0$|interface: 127.0.0.1|' /etc/unbound/unbound.conf
-        # sed -i 's|# hide-identity: no|hide-identity: yes|' /etc/unbound/unbound.conf
-        # sed -i 's|# hide-version: no|hide-version: yes|' /etc/unbound/unbound.conf
-        # sed -i 's|use-caps-for-id: no|use-caps-for-id: yes|' /etc/unbound/unbound.conf
+        echo "server:
+            directory: \"/etc/unbound\"
+            username: unbound
+            # make sure unbound can access entropy from inside the chroot.
+            # e.g. on linux the use these commands (on BSD, devfs(8) is used):
+            #      mount --bind -n /dev/random /etc/unbound/dev/random
+            # and  mount --bind -n /dev/log /etc/unbound/dev/log
+            chroot: \"/etc/unbound\"
+            # logfile: \"/etc/unbound/unbound.log\"  #uncomment to use logfile.
+            pidfile: \"/etc/unbound/unbound.pid\"
+            # verbosity: 1        # uncomment and increase to get more logging.
+            # listen on all interfaces, answer queries from the local subnet.
+            interface: 127.0.0.1
+            access-control: 10.0.0.0/8 allow
+            access-control: 2001:DB8::/64 allow" > /etc/unbound/unbound.conf
 
         # enable our test.com zone 
         echo "# Custom test.com zone configured below" >> /etc/unbound/unbound.conf
@@ -99,11 +93,12 @@ echo "server:
         for i in `seq 1001 1100`; do
             echo "local-data: \"r"$i".test.com. IN A 127.0.0.1\"" >> /etc/unbound/unbound.conf
         done
-        echo "Successfully added another 100 A records."
+        echo "Successfully added another 100 A records." >&2
       ;;
     m)
-      echo "-m was triggered!" >&2
-      ;;
+        cp /etc/unbound/unbound.conf /home/centos/unbound.conf.export
+        echo "-m was triggered!" >&2
+        ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
       ;;
