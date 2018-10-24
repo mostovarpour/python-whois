@@ -46,7 +46,6 @@ while getopts ":i :u :m" opt; do
                 access-control: 10.0.0.0/8 allow
                 access-control: 127.0.0.0/8 allow
                 access-control: 192.168.0.0/16 allow
-                aggressive-nsec: yes
                 cache-max-ttl: 14400
                 cache-min-ttl: 300
                 hide-identity: yes
