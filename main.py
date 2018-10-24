@@ -20,15 +20,12 @@ MYSQL_CHARSET = 'utf8mb4'
 
 # read an ip address from mysql
 def read_ip(ip):
-    try:
-        mysql_connection = pymysql.connect(host=MYSQL_HOST,
-                                        user=MYSQL_USER,
-                                        password=MYSQL_PASS,
-                                        db=MYSQL_DB,
-                                        charset=MYSQL_CHARSET,
-                                        cursorclass=pymysql.cursors.DictCursor)
-    except Exception as e:
-        print(e)
+    mysql_connection = pymysql.connect(host=MYSQL_HOST,
+                                    user=MYSQL_USER,
+                                    password=MYSQL_PASS,
+                                    db=MYSQL_DB,
+                                    charset=MYSQL_CHARSET,
+                                    cursorclass=pymysql.cursors.DictCursor)
     try:
         with mysql_connection.cursor() as cursor:
             sql = "SELECT `ip_address`, `registrant_contact`, `admin_contact`, `tech_contact` FROM `ips` where `ip_address`=%s"
@@ -42,15 +39,12 @@ def read_ip(ip):
 
 # read a domain name from mysql
 def read_domain(domain):
-    try:
-        mysql_connection = pymysql.connect(host=MYSQL_HOST,
-                                        user=MYSQL_USER,
-                                        password=MYSQL_PASS,
-                                        db=MYSQL_DB,
-                                        charset=MYSQL_CHARSET,
-                                        cursorclass=pymysql.cursors.DictCursor)
-    except Exception as e:
-        print(e)
+    mysql_connection = pymysql.connect(host=MYSQL_HOST,
+                                    user=MYSQL_USER,
+                                    password=MYSQL_PASS,
+                                    db=MYSQL_DB,
+                                    charset=MYSQL_CHARSET,
+                                    cursorclass=pymysql.cursors.DictCursor)
     try:
         with mysql_connection.cursor() as cursor:
             sql = "SELECT `domain_name`, `registrant_contact`, `admin_contact`, `tech_contact` FROM `domains` where `domain_name`=%s"
@@ -58,7 +52,7 @@ def read_domain(domain):
             result = cursor.fetchone()
             return result
     except:
-        print("Something went wrong read a domain from the database")
+        print("Something went wrong reading a domain from the database")
     mysql_connection.close()
 
 
