@@ -13,7 +13,8 @@ If you can't install pip with yum, you can install it the get-pip.py:`
 `curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"` then `sudo python get-pip.py`
 
 ### Install Docker
---
+---
+
 OSX - `brew cask install docker`
 
 CentOS - `sudo yum install docker`
