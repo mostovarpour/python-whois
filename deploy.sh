@@ -39,23 +39,57 @@ while getopts ":i :u :m" opt; do
         # Install Unbound
         yum install -y unbound
 
-        echo "server:
+        echo "
+        ## Simple recursive caching DNS, UDP port 53
+        #
+        server:
             directory: \"/etc/unbound\"
             username: unbound
-            # make sure unbound can access entropy from inside the chroot.
-            # e.g. on linux the use these commands (on BSD, devfs(8) is used):
-            #      mount --bind -n /dev/random /etc/unbound/dev/random
-            # and  mount --bind -n /dev/log /etc/unbound/dev/log
-            chroot: \"/etc/unbound\"
-            # logfile: \"/etc/unbound/unbound.log\"  #uncomment to use logfile.
             pidfile: \"/etc/unbound/unbound.pid\"
-            # verbosity: 1        # uncomment and increase to get more logging.
-            # listen on all interfaces, answer queries from the local subnet.
-            interface: 127.0.0.1
             access-control: 10.0.0.0/8 allow
-            access-control: 2001:DB8::/64 allow" > /etc/unbound/unbound.conf
+            access-control: 127.0.0.0/8 allow
+            access-control: 192.168.0.0/16 allow
+            aggressive-nsec: yes
+            cache-max-ttl: 14400
+            cache-min-ttl: 300
+            hide-identity: yes
+            hide-version: yes
+            interface: 127.0.0.1
+            minimal-responses: yes
+            num-threads: 4
+            prefetch: yes
+            qname-minimisation: yes
+            rrset-roundrobin: yes
+            use-caps-for-id: yes
+            verbosity: 1
+
+        forward-zone:
+            name: \".\"
+            forward-addr: 1.1.1.1        # Cloudflare
+            forward-addr: 1.0.0.1        # Cloudflare
+            forward-addr: 8.8.4.4        # Google
+            forward-addr: 8.8.8.8        # Google
+            forward-addr: 37.235.1.174   # FreeDNS
+            forward-addr: 37.235.1.177   # FreeDNS
+            forward-addr: 50.116.23.211  # OpenNIC
+            forward-addr: 64.6.64.6      # Verisign
+            forward-addr: 64.6.65.6      # Verisign" > /etc/unbound/unbound.conf
+        # echo "server:
+        #     directory: \"/etc/unbound\"
+        #     username: unbound
+        #     # make sure unbound can access entropy from inside the chroot.
+        #     # e.g. on linux the use these commands (on BSD, devfs(8) is used):
+        #     #      mount --bind -n /dev/random /etc/unbound/dev/random
+        #     # and  mount --bind -n /dev/log /etc/unbound/dev/log
+        #     chroot: \"/etc/unbound\"
+        #     # logfile: \"/etc/unbound/unbound.log\"  #uncomment to use logfile.
+        #     # verbosity: 1        # uncomment and increase to get more logging.
+        #     # listen on all interfaces, answer queries from the local subnet.
+        #     access-control: 10.0.0.0/8 allow
+        #     access-control: 2001:DB8::/64 allow" > /etc/unbound/unbound.conf
 
         # enable our test.com zone 
+        echo "server: " >> /etc/unbound/unbound.conf
         echo "# Custom test.com zone configured below" >> /etc/unbound/unbound.conf
         echo "local-zone: \"test.com\" static" >> /etc/unbound/unbound.conf
 
@@ -87,20 +121,28 @@ while getopts ":i :u :m" opt; do
         chattr +i /etc/resolv.conf
 
         echo "The installation is done."
-      ;;
+        ;;
     u)
         #Add the 100 A records if the -u flag was given
         for i in `seq 1001 1100`; do
             echo "local-data: \"r"$i".test.com. IN A 127.0.0.1\"" >> /etc/unbound/unbound.conf
         done
         echo "Successfully added another 100 A records." >&2
-      ;;
+        ;;
     m)
-        cp /etc/unbound/unbound.conf /home/centos/unbound.conf.export
-        echo "-m was triggered!" >&2
+        domain="test.com"
+        for ns in $(host -t ns $domain | cut -d" " -f4);do
+            host -l $domain $ns | grep "has address" > $domain.txt
+            done
+            if [ ! -s "$domain.txt" ]; then
+                    echo "Zone Transfer Failed!"
+                    rm "$domain.txt"
+            else
+                    echo "Zone Transfer Completed Successfully!"
+            fi
         ;;
     \?)
-      echo "Invalid option: -$OPTARG" >&2
-      ;;
-  esac
+        echo "Invalid option: -$OPTARG" >&2
+        ;;
+    esac
 done
