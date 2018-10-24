@@ -15,7 +15,7 @@ LOGFILE = (expanduser("~") + '/whois-service-access.log')
 # variables for our mysql connection
 MYSQL_HOST = 'localhost'
 MYSQL_USER = 'python_user'
-MYSQL_PASS = 'icann'
+MYSQL_PASS = input("Please enter password for python to access mysql: ")
 MYSQL_DB = 'python_db'
 MYSQL_CHARSET = 'utf8mb4'
 
