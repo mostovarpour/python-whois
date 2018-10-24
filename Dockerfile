@@ -1,8 +1,11 @@
 FROM python:2
 
-ADD main.py /
+EXPOSE 8080
 
-run yum update && yum install python-pip
+WORKDIR /app
+
 run pip install pymysql
+
+COPY . .
 
 CMD [ "python", "./main.py" ]

@@ -30,12 +30,6 @@ while getopts ":i :u :m" opt; do
         exit 3
         fi
 
-        echo ""
-        echo "Welcome! This script will install and configure Unbound, and set it as your default system DNS resolver."
-        echo ""
-        read -n1 -r -p "Press any key to continue..."
-        echo ""
-
         # Install Unbound
         yum install -y unbound
 
@@ -70,24 +64,10 @@ while getopts ":i :u :m" opt; do
                 forward-addr: 50.116.23.211  # OpenNIC
                 forward-addr: 64.6.64.6      # Verisign
                 forward-addr: 64.6.65.6      # Verisign" > /etc/unbound/unbound.conf
-        # echo "server:
-        #     directory: \"/etc/unbound\"
-        #     username: unbound
-        #     # make sure unbound can access entropy from inside the chroot.
-        #     # e.g. on linux the use these commands (on BSD, devfs(8) is used):
-        #     #      mount --bind -n /dev/random /etc/unbound/dev/random
-        #     # and  mount --bind -n /dev/log /etc/unbound/dev/log
-        #     chroot: \"/etc/unbound\"
-        #     # logfile: \"/etc/unbound/unbound.log\"  #uncomment to use logfile.
-        #     # verbosity: 1        # uncomment and increase to get more logging.
-        #     # listen on all interfaces, answer queries from the local subnet.
-        #     access-control: 10.0.0.0/8 allow
-        #     access-control: 2001:DB8::/64 allow" > /etc/unbound/unbound.conf
 
         # enable our test.com zone 
         echo "server: " >> /etc/unbound/unbound.conf
-        echo "# Custom test.com zone configured below" >> /etc/unbound/unbound.conf
-        echo "local-zone: \"test.com\" static" >> /etc/unbound/unbound.conf
+        echo "local-zone: \"test.com\" transparent" >> /etc/unbound/unbound.conf
 
         #Add the 1000 A records
         echo "local-data: \"test.com. IN A 127.0.0.1\"" >> /etc/unbound/unbound.conf
@@ -126,7 +106,7 @@ while getopts ":i :u :m" opt; do
         echo "Successfully added another 100 A records." >&2
         ;;
     m)
-        domain="test.com"
+        domain="127.0.0.1"
         for ns in $(host -t ns $domain | cut -d" " -f4);do
             host -l $domain $ns | grep "has address" > $domain.txt
             done
