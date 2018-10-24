@@ -39,41 +39,38 @@ while getopts ":i :u :m" opt; do
         # Install Unbound
         yum install -y unbound
 
-        echo "
-        ## Simple recursive caching DNS, UDP port 53
-        #
-        server:
-            directory: \"/etc/unbound\"
-            username: unbound
-            pidfile: \"/etc/unbound/unbound.pid\"
-            access-control: 10.0.0.0/8 allow
-            access-control: 127.0.0.0/8 allow
-            access-control: 192.168.0.0/16 allow
-            aggressive-nsec: yes
-            cache-max-ttl: 14400
-            cache-min-ttl: 300
-            hide-identity: yes
-            hide-version: yes
-            interface: 127.0.0.1
-            minimal-responses: yes
-            num-threads: 4
-            prefetch: yes
-            qname-minimisation: yes
-            rrset-roundrobin: yes
-            use-caps-for-id: yes
-            verbosity: 1
+        echo "server:
+                directory: \"/etc/unbound\"
+                username: unbound
+                pidfile: \"/etc/unbound/unbound.pid\"
+                access-control: 10.0.0.0/8 allow
+                access-control: 127.0.0.0/8 allow
+                access-control: 192.168.0.0/16 allow
+                aggressive-nsec: yes
+                cache-max-ttl: 14400
+                cache-min-ttl: 300
+                hide-identity: yes
+                hide-version: yes
+                interface: 127.0.0.1
+                minimal-responses: yes
+                num-threads: 4
+                prefetch: yes
+                qname-minimisation: yes
+                rrset-roundrobin: yes
+                use-caps-for-id: yes
+                verbosity: 1
 
-        forward-zone:
-            name: \".\"
-            forward-addr: 1.1.1.1        # Cloudflare
-            forward-addr: 1.0.0.1        # Cloudflare
-            forward-addr: 8.8.4.4        # Google
-            forward-addr: 8.8.8.8        # Google
-            forward-addr: 37.235.1.174   # FreeDNS
-            forward-addr: 37.235.1.177   # FreeDNS
-            forward-addr: 50.116.23.211  # OpenNIC
-            forward-addr: 64.6.64.6      # Verisign
-            forward-addr: 64.6.65.6      # Verisign" > /etc/unbound/unbound.conf
+            forward-zone:
+                name: \".\"
+                forward-addr: 1.1.1.1        # Cloudflare
+                forward-addr: 1.0.0.1        # Cloudflare
+                forward-addr: 8.8.4.4        # Google
+                forward-addr: 8.8.8.8        # Google
+                forward-addr: 37.235.1.174   # FreeDNS
+                forward-addr: 37.235.1.177   # FreeDNS
+                forward-addr: 50.116.23.211  # OpenNIC
+                forward-addr: 64.6.64.6      # Verisign
+                forward-addr: 64.6.65.6      # Verisign" > /etc/unbound/unbound.conf
         # echo "server:
         #     directory: \"/etc/unbound\"
         #     username: unbound
