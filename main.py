@@ -4,6 +4,7 @@ import socket
 import SocketServer
 import os
 import re
+import sys
 import pymysql
 from os.path import expanduser
 from time import strftime
@@ -15,7 +16,7 @@ LOGFILE = (expanduser("~") + '/whois-service-access.log')
 # variables for our mysql connection
 MYSQL_HOST = 'localhost'
 MYSQL_USER = 'python_user'
-MYSQL_PASS = input("Please enter password for python to access mysql: ")
+MYSQL_PASS = sys.argv[1]
 MYSQL_DB = 'python_db'
 MYSQL_CHARSET = 'utf8mb4'
 
