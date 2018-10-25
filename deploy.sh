@@ -140,8 +140,8 @@ www		IN	A		127.0.0.1" > /var/named/test.com.zone
             fi
         # start the comparison
         if [ -e $domain.txt-compare ]; then
-            file1=(md5sum "$domain.txt")
-            file2=(md5sum "$domain.txt-compare")
+            file1=(`md5sum $domain.txt`)
+            file2=(`md5sum $domain.txt-compare`)
             if [ "$file1" != "$file2" ]; then
                 echo "Zone file has changed!" >&2
             else
