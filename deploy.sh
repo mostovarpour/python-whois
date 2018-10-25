@@ -114,45 +114,53 @@ www		IN	A		127.0.0.1" > /var/named/test.com.zone
         echo "The installation is done."
         ;;
     u)
-        #Add the 100 A records if the -u flag was given
-        for i in `seq 1001 1100`; do
-            echo "r"$i"		IN	A		127.0.0.1" >> /var/named/test.com.zone
-        done
-        echo "Successfully added another 100 A records." >&2
+        if [ -e /var/named/test.com.zone ]; then
+            #Add the 100 A records if the -u flag was given
+            for i in `seq 1001 1100`; do
+                echo "r"$i"		IN	A		127.0.0.1" >> /var/named/test.com.zone
+            done
+            echo "Successfully added another 100 A records." >&2
 
-        if pgrep systemd-journal; then
-        systemctl restart named
+            if pgrep systemd-journal; then
+            systemctl restart named
+            else
+            service named restart
+            fi
         else
-        service named restart
+            echo "Please run the script with the -i option first."
         fi
         ;;
     m)
-        domain="test.com"
-        # if domain.txt exists then copy it for the comparison
-        if [ -e $domain.txt ]; then
-            cp $domain.txt $domain.txt-compare
-        fi
-
-        # perform the zone transfer
-        for ns in $(host -t ns $domain | cut -d" " -f4);do
-            host -l $domain $ns | grep "has address" > $domain.txt
-            done
-            if [ ! -s "$domain.txt" ]; then
-                    echo "Zone Transfer Failed!"
-                    rm "$domain.txt"
-            else
-                    echo "Zone Transfer Completed Successfully!"
-
+        if [ -e /var/named/test.com.zone ]; then
+            domain="test.com"
+            # if domain.txt exists then copy it for the comparison
+            if [ -e $domain.txt ]; then
+                cp $domain.txt $domain.txt-compare
             fi
-        # start the comparison
-        if [ -e $domain.txt-compare ]; then
-            file1=(`md5sum $domain.txt`)
-            file2=(`md5sum $domain.txt-compare`)
-            if [ "$file1" != "$file2" ]; then
-                echo "Zone file has changed!" >&2
-            else
-                echo "Zone file has not changed." >&2
+
+            # perform the zone transfer
+            for ns in $(host -t ns $domain | cut -d" " -f4);do
+                host -l $domain $ns | grep "has address" > $domain.txt
+                done
+                if [ ! -s "$domain.txt" ]; then
+                        echo "Zone Transfer Failed!"
+                        rm "$domain.txt"
+                else
+                        echo "Zone Transfer Completed Successfully!"
+
+                fi
+            # start the comparison
+            if [ -e $domain.txt-compare ]; then
+                file1=(`md5sum $domain.txt`)
+                file2=(`md5sum $domain.txt-compare`)
+                if [ "$file1" != "$file2" ]; then
+                    echo "Zone file has changed!" >&2
+                else
+                    echo "Zone file has not changed." >&2
+                fi
             fi
+        else
+            echo "Please run the script with the -i option first."
         fi
         ;;
     \?)
