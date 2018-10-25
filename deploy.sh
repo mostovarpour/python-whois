@@ -116,7 +116,9 @@ www		IN	A		127.0.0.1" > /var/named/test.com.zone
     u)
         if [ -e /var/named/test.com.zone ]; then
             #Add the 100 A records if the -u flag was given
-            for i in `seq 1001 1100`; do
+            last=`awk '/./{line=$0} END{print line}' test.com.zone | cut -f1 | sed 's/r//'`
+            lastplus=$((last+100))
+            for i in `seq $last $lastplus`; do
                 echo "r"$i"		IN	A		127.0.0.1" >> /var/named/test.com.zone
             done
             echo "Successfully added another 100 A records." >&2
