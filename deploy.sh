@@ -44,7 +44,7 @@ while getopts ":i :u :m" opt; do
                     statistics-file \"/var/named/data/named_stats.txt\";
                     memstatistics-file \"/var/named/data/named_mem_stats.txt\";
                     allow-query { any; };
-                    allow-transfer     { localhost; 2.2.2.2; };
+                    allow-transfer     { localhost; };
                     recursion yes;
 
                     dnssec-enable yes;
@@ -55,15 +55,15 @@ while getopts ":i :u :m" opt; do
                     bindkeys-file \"/etc/named.iscdlv.key\";
 
                     managed-keys-directory \"/var/named/dynamic\";
-            };" >> /etc/named
+            };" > /etc/named.conf
         
         echo "zone \"test.com\" IN {
                 type master;
                 file \"test.com.zone\";
                 allow-update { none; };
-        };" >> /etc/named
+        };" >> /etc/named.conf
 
-        echo "$TTL 86400
+        echo "\$TTL 86400
             @   IN  SOA     ns1.test.com. root.test.com. (
                     2013042201  ;Serial
                     3600        ;Refresh
@@ -72,8 +72,8 @@ while getopts ":i :u :m" opt; do
                     86400       ;Minimum TTL
             )
             ; Specify our two nameservers
-                    IN	NS		ns1.mydomain.com.
-                    IN	NS		ns2.mydomain.com.
+                    IN	NS		ns1.test.com.
+                    IN	NS		ns2.test.com.
             ; Resolve nameserver hostnames to IP, replace with your two droplet IP addresses.
             ns1		IN	A		127.0.0.1
             ns2		IN	A		127.0.0.1
@@ -84,7 +84,7 @@ while getopts ":i :u :m" opt; do
 
         #Add the 1000 A records
         for i in `seq 1 1000`; do
-            echo "r"$i"\tIN A\t127.0.0.1" >> /var/named/test.com.zone
+            echo "r"$i" IN A 127.0.0.1" >> /var/named/test.com.zone
         done
 
         if pgrep systemd-journal; then
@@ -113,7 +113,7 @@ while getopts ":i :u :m" opt; do
     u)
         #Add the 100 A records if the -u flag was given
         for i in `seq 1001 1100`; do
-            echo "r"$i"\tIN A\t127.0.0.1" >> /var/named/test.com.zone
+            echo "r"$i" IN A 127.0.0.1" >> /var/named/test.com.zone
         done
         for i in `seq 1001 1100`; do
             echo "local-data: \"r"$i".test.com. IN A 127.0.0.1\"" >> /etc/unbound/unbound.conf
