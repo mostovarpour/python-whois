@@ -119,6 +119,12 @@ www		IN	A		127.0.0.1" > /var/named/test.com.zone
             echo "r"$i"		IN	A		127.0.0.1" >> /var/named/test.com.zone
         done
         echo "Successfully added another 100 A records." >&2
+
+        if pgrep systemd-journal; then
+        systemctl restart named
+        else
+        service named restart
+        fi
         ;;
     m)
         domain="test.com"
