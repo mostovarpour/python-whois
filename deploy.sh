@@ -127,7 +127,7 @@ www		IN	A		127.0.0.1" > /var/named/test.com.zone
     m)
         # perform the zone transfer
         domain="test.com"
-        zonefile = "$domain.txt"
+        zonefile="$domain.txt"
         for ns in $(host -t ns $domain | cut -d" " -f4);do
             host -l $domain $ns | grep "has address" > $domain.txt
             done
@@ -139,8 +139,8 @@ www		IN	A		127.0.0.1" > /var/named/test.com.zone
             fi
         if [ -e $domain.txt ]; then
             # output if the file has changed since this command was last run
-            file1 = (md5sum "$zonefile")
-            file2 = "$domain.txt"
+            file1=(md5sum "$zonefile")
+            file2="$domain.txt"
             if [ "$file1" != "$file2" ]; then
                 echo "Zone file has changed!" >&2
             else
