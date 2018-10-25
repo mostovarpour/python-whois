@@ -30,56 +30,68 @@ while getopts ":i :u :m" opt; do
         exit 3
         fi
 
-        # Install Unbound
-        yum install -y unbound
+        # Install bind
+        yum install -y bind bind-utils
 
-        echo "server:
-                directory: \"/etc/unbound\"
-                username: unbound
-                pidfile: \"/etc/unbound/unbound.pid\"
-                access-control: 10.0.0.0/8 allow
-                access-control: 127.0.0.0/8 allow
-                access-control: 192.168.0.0/16 allow
-                cache-max-ttl: 14400
-                cache-min-ttl: 300
-                hide-identity: yes
-                hide-version: yes
-                interface: 127.0.0.1
-                minimal-responses: yes
-                num-threads: 4
-                prefetch: yes
-                qname-minimisation: yes
-                rrset-roundrobin: yes
-                use-caps-for-id: yes
-                verbosity: 1
+        # copy the config file
+        cp /etc/named.conf /etc/named.conf.orig
 
-            forward-zone:
-                name: \".\"
-                forward-addr: 1.1.1.1        # Cloudflare
-                forward-addr: 1.0.0.1        # Cloudflare
-                forward-addr: 8.8.4.4        # Google
-                forward-addr: 8.8.8.8        # Google
-                forward-addr: 37.235.1.174   # FreeDNS
-                forward-addr: 37.235.1.177   # FreeDNS
-                forward-addr: 50.116.23.211  # OpenNIC
-                forward-addr: 64.6.64.6      # Verisign
-                forward-addr: 64.6.65.6      # Verisign" > /etc/unbound/unbound.conf
+        echo "options {
+                    #listen-on port 53 { 127.0.0.1; };
+                    listen-on-v6 port 53 { ::1; };
+                    directory	\"/var/named\";
+                    dump-file	\"/var/named/data/cache_dump.db\";
+                    statistics-file \"/var/named/data/named_stats.txt\";
+                    memstatistics-file \"/var/named/data/named_mem_stats.txt\";
+                    allow-query { any; };
+                    allow-transfer     { localhost; 2.2.2.2; };
+                    recursion yes;
 
-        # enable our test.com zone 
-        echo "server: " >> /etc/unbound/unbound.conf
-        echo "local-zone: \"test.com\" transparent" >> /etc/unbound/unbound.conf
+                    dnssec-enable yes;
+                    dnssec-validation yes;
+                    dnssec-lookaside auto;
+
+                    /* Path to ISC DLV key */
+                    bindkeys-file \"/etc/named.iscdlv.key\";
+
+                    managed-keys-directory \"/var/named/dynamic\";
+            };" >> /etc/named
+        
+        echo "zone \"test.com\" IN {
+                type master;
+                file \"test.com.zone\";
+                allow-update { none; };
+        };" >> /etc/named
+
+        echo "$TTL 86400
+            @   IN  SOA     ns1.test.com. root.test.com. (
+                    2013042201  ;Serial
+                    3600        ;Refresh
+                    1800        ;Retry
+                    604800      ;Expire
+                    86400       ;Minimum TTL
+            )
+            ; Specify our two nameservers
+                    IN	NS		ns1.mydomain.com.
+                    IN	NS		ns2.mydomain.com.
+            ; Resolve nameserver hostnames to IP, replace with your two droplet IP addresses.
+            ns1		IN	A		127.0.0.1
+            ns2		IN	A		127.0.0.1
+
+            ; Define hostname -> IP pairs which you wish to resolve
+            @		IN	A		127.0.0.1
+            www		IN	A		127.0.0.1" > /var/named/test.com.zone
 
         #Add the 1000 A records
-        echo "local-data: \"test.com. IN A 127.0.0.1\"" >> /etc/unbound/unbound.conf
         for i in `seq 1 1000`; do
-            echo "local-data: \"r"$i".test.com. IN A 127.0.0.1\"" >> /etc/unbound/unbound.conf
+            echo "r"$i"\tIN A\t127.0.0.1" >> /var/named/test.com.zone
         done
 
         if pgrep systemd-journal; then
-        systemctl enable unbound
-        systemctl restart unbound
+        systemctl enable named
+        systemctl restart named
         else
-        service unbound restart
+        service named restart
         fi
 
         # Allow the modification of the file
@@ -100,6 +112,9 @@ while getopts ":i :u :m" opt; do
         ;;
     u)
         #Add the 100 A records if the -u flag was given
+        for i in `seq 1001 1100`; do
+            echo "r"$i"\tIN A\t127.0.0.1" >> /var/named/test.com.zone
+        done
         for i in `seq 1001 1100`; do
             echo "local-data: \"r"$i".test.com. IN A 127.0.0.1\"" >> /etc/unbound/unbound.conf
         done
