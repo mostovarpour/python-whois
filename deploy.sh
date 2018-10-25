@@ -129,14 +129,13 @@ www		IN	A		127.0.0.1" > /var/named/test.com.zone
 
         # perform the zone transfer
         for ns in $(host -t ns $domain | cut -d" " -f4);do
-            host -l $domain $ns | grep "has address" > $domain-$increment.txt
+            host -l $domain $ns | grep "has address" > $domain.txt
             done
             if [ ! -s "$domain.txt" ]; then
                     echo "Zone Transfer Failed!"
                     rm "$domain.txt"
             else
                     echo "Zone Transfer Completed Successfully!"
-                    $increment=$increment+1
 
             fi
         # start the comparison
