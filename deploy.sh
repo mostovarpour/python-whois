@@ -65,8 +65,7 @@ while getopts ":i :u :m" opt; do
         };" >> /etc/named.conf
 
         # set up our test.com zone file
-        echo "
-\$TTL 86400
+        echo "\$TTL 86400
 @   IN  SOA     test.com. root.test.com. (
 2013042201  ;Serial
 3600        ;Refresh
@@ -82,7 +81,7 @@ ns1		IN	A		127.0.0.1
 ns2		IN	A		127.0.0.1
 
 ; Define hostname -> IP pairs which you wish to resolve
-@		IN	NS		127.0.0.1
+@		IN	NS		localhost.
 @		IN	A		127.0.0.1
 www		IN	A		127.0.0.1" > /var/named/test.com.zone
 
@@ -117,37 +116,38 @@ www		IN	A		127.0.0.1" > /var/named/test.com.zone
     u)
         #Add the 100 A records if the -u flag was given
         for i in `seq 1001 1100`; do
-            echo "r"$i" IN A 127.0.0.1" >> /var/named/test.com.zone
-        done
-        for i in `seq 1001 1100`; do
-            echo "local-data: \"r"$i".test.com. IN A 127.0.0.1\"" >> /var/named/test.com.zone
+            echo "r"$i"		IN	A		127.0.0.1" >> /var/named/test.com.zone
         done
         echo "Successfully added another 100 A records." >&2
         ;;
     m)
-        # perform the zone transfer
         domain="test.com"
-        zonefile="$domain.txt"
+        # if domain.txt exists then copy it for the comparison
+        if [ -e $domain.txt ]; then
+            cp $domain.txt $domain.txt-compare
+        fi
+
+        # perform the zone transfer
         for ns in $(host -t ns $domain | cut -d" " -f4);do
-            host -l $domain $ns | grep "has address" > $domain.txt
+            host -l $domain $ns | grep "has address" > $domain-$increment.txt
             done
             if [ ! -s "$domain.txt" ]; then
                     echo "Zone Transfer Failed!"
                     rm "$domain.txt"
             else
                     echo "Zone Transfer Completed Successfully!"
+                    $increment=$increment+1
+
             fi
-        if [ -e $domain.txt ]; then
-            # output if the file has changed since this command was last run
-            file1=(md5sum "$zonefile")
-            file2="$domain.txt"
+        # start the comparison
+        if [ -e $domain.txt-compare ]; then
+            file1=(md5sum "$domain.txt")
+            file2=(md5sum "$domain.txt-compare")
             if [ "$file1" != "$file2" ]; then
                 echo "Zone file has changed!" >&2
             else
                 echo "Zone file has not changed." >&2
             fi
-        else
-            echo "Creating $domain.txt zone file"
         fi
         ;;
     \?)
