@@ -14,9 +14,9 @@ while getopts ":i :u :m" opt; do
         echo ""
         lsof -i :53
         echo ""
-        echo "Please disable or uninstall it before installing unbound."
+        echo "Please disable or uninstall it before installing bind."
         while [[ $CONTINUE != "y" && $CONTINUE != "n" ]]; do
-            read -rp "Do you still want to run the script? Unbound might not work... [y/n]: " -e CONTINUE
+            read -rp "Do you still want to run the script? bind might not work... [y/n]: " -e CONTINUE
         done
         if [[ "$CONTINUE" = "n" ]]; then
             exit 2
@@ -36,6 +36,7 @@ while getopts ":i :u :m" opt; do
         # copy the config file
         cp /etc/named.conf /etc/named.conf.orig
 
+        # set up /etc/named.conf
         echo "options {
                     #listen-on port 53 { 127.0.0.1; };
                     listen-on-v6 port 53 { ::1; };
@@ -63,28 +64,31 @@ while getopts ":i :u :m" opt; do
                 allow-update { none; };
         };" >> /etc/named.conf
 
-        echo "\$TTL 86400
-            @   IN  SOA     ns1.test.com. root.test.com. (
-                    2013042201  ;Serial
-                    3600        ;Refresh
-                    1800        ;Retry
-                    604800      ;Expire
-                    86400       ;Minimum TTL
-            )
-            ; Specify our two nameservers
-                    IN	NS		ns1.test.com.
-                    IN	NS		ns2.test.com.
-            ; Resolve nameserver hostnames to IP, replace with your two droplet IP addresses.
-            ns1		IN	A		127.0.0.1
-            ns2		IN	A		127.0.0.1
+        # set up our test.com zone file
+        echo "
+\$TTL 86400
+@   IN  SOA     test.com. root.test.com. (
+2013042201  ;Serial
+3600        ;Refresh
+1800        ;Retry
+604800      ;Expire
+86400       ;Minimum TTL
+)
+; Specify our two nameservers
+IN	NS		ns1.test.com.
+IN	NS		ns2.test.com.
+; Resolve nameserver hostnames to IP, replace with your two droplet IP addresses.
+ns1		IN	A		127.0.0.1
+ns2		IN	A		127.0.0.1
 
-            ; Define hostname -> IP pairs which you wish to resolve
-            @		IN	A		127.0.0.1
-            www		IN	A		127.0.0.1" > /var/named/test.com.zone
+; Define hostname -> IP pairs which you wish to resolve
+@		IN	NS		127.0.0.1
+@		IN	A		127.0.0.1
+www		IN	A		127.0.0.1" > /var/named/test.com.zone
 
         #Add the 1000 A records
         for i in `seq 1 1000`; do
-            echo "r"$i" IN A 127.0.0.1" >> /var/named/test.com.zone
+            echo "r"$i"		IN	A		127.0.0.1" >> /var/named/test.com.zone
         done
 
         if pgrep systemd-journal; then
@@ -116,12 +120,14 @@ while getopts ":i :u :m" opt; do
             echo "r"$i" IN A 127.0.0.1" >> /var/named/test.com.zone
         done
         for i in `seq 1001 1100`; do
-            echo "local-data: \"r"$i".test.com. IN A 127.0.0.1\"" >> /etc/unbound/unbound.conf
+            echo "local-data: \"r"$i".test.com. IN A 127.0.0.1\"" >> /var/named/test.com.zone
         done
         echo "Successfully added another 100 A records." >&2
         ;;
     m)
-        domain="127.0.0.1"
+        # perform the zone transfer
+        domain="test.com"
+        zonefile = "$domain.txt"
         for ns in $(host -t ns $domain | cut -d" " -f4);do
             host -l $domain $ns | grep "has address" > $domain.txt
             done
@@ -131,6 +137,18 @@ while getopts ":i :u :m" opt; do
             else
                     echo "Zone Transfer Completed Successfully!"
             fi
+        if [ -e $domain.txt ]; then
+            # output if the file has changed since this command was last run
+            file1 = (md5sum "$zonefile")
+            file2 = "$domain.txt"
+            if [ "$file1" != "$file2" ]; then
+                echo "Zone file has changed!" >&2
+            else
+                echo "Zone file has not changed." >&2
+            fi
+        else
+            echo "Creating $domain.txt zone file"
+        fi
         ;;
     \?)
         echo "Invalid option: -$OPTARG" >&2
