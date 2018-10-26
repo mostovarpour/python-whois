@@ -8,4 +8,6 @@ run pip install pymysql
 
 COPY . .
 
-CMD [ "python", "./main.py" ]
+# ARG mysql
+# CMD python main.py $ENV1
+ENTRYPOINT [ "python", "main.py" ]

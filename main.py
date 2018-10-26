@@ -1,10 +1,12 @@
 #!/usr/bin/python
 
 import socket
+import threading
 import SocketServer
 import os
 import re
 import sys
+import signal
 import pymysql
 from os.path import expanduser
 from time import strftime
@@ -58,7 +60,7 @@ def read_domain(domain):
     mysql_connection.close()
 
 
-#Check to see if the input is a valid IP address
+# check to see if the input is a valid IP address
 def check_is_ip(query_in):
     try:
         pattern = r"\b(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b"
@@ -70,7 +72,7 @@ def check_is_ip(query_in):
         print("Something went wrong while checking the input for a valud IP")
 
 
-#Now we want to check the input to ensure it is a valid domain name
+# now we want to check the input to ensure it is a valid domain name
 def check_is_domain(query_in):
     try:
         #check to see if we have a tld and sld
@@ -94,115 +96,120 @@ def check_is_domain(query_in):
     except:
         print("Something went wrong while checking the input for a valid domain.")
 
-
-class TCPServer(SocketServer.BaseRequestHandler):
+class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
     # our main service
     def handle(self):
         MAX_QUERY_SIZE = 1024
 
-        #Start the main service loop
-        while True:
-            #Receive the data stream less than the MAX_QUERY_SIZE
-            try:
-                self.data_received = self.request.recv(MAX_QUERY_SIZE)
-            except Exception as e:
-                print ("Caught exception socket.error : %s" % e)
-            if not self.data_received:
-                #If we do not receive any data then we need to break out the while loop.
-                break
+        #Receive the data stream less than the MAX_QUERY_SIZE
+        try:
+            self.data_received = self.request.recv(MAX_QUERY_SIZE)
+        except Exception as e:
+            print ("Caught exception socket.error : %s" % e)
+        
+        # if not self.data_received:
+        #     #If we do not receive any data then we need to break out the while loop.
+        #     break
 
-            #Write the timestamp and IP address of who accessed the service to the log file
-            try:
-                file = open(LOGFILE, 'a+')
-                file.write("[" + strftime("%Y/%m/%d %H:%M:%S") +
-                            "] " + self.client_address[0] + "\r\n")
-                file.close()
-            except IOError:
-                print("There was a problem writing to the logfile.")
+        #Write the timestamp and IP address of who accessed the service to the log file
+        try:
+            file = open(LOGFILE, 'a+')
+            file.write("[" + strftime("%Y/%m/%d %H:%M:%S") +
+                        "] " + self.client_address[0] + "\r\n")
+            file.close()
+        except IOError:
+            print("There was a problem writing to the logfile.")
 
-            #TODO find out how many responses we are serving instead of just having a placeholder of 1
-            number_of_responses = 1
-            #TODO get the TLD instead of the placeholder
-            TLD = "COM"
+        #TODO find out how many responses we are serving instead of just having a placeholder of 1
+        number_of_responses = 1
+        #TODO get the TLD instead of the placeholder
+        TLD = "COM"
 
-            #Create mock whois response
-            response = "matthewo WHOIS server \r\n"
-            response = response + \
-                "for more information on matthewo, please hire him for the systems/devops engineer role \r\n"
-            response = response + "This query returned " + \
-                str(number_of_responses) + " object.\r\n"
-            response = response + "\r\nrefer:\twhois.matthewo.com\r\n"
-            response = response + "\r\ndomain:\t" + TLD + "\r\n"
+        #Create mock whois response
+        response = "matthewo WHOIS server \r\n"
+        response = response + \
+            "for more information on matthewo, please hire him for the systems/devops engineer role \r\n"
+        response = response + "This query returned " + \
+            str(number_of_responses) + " object.\r\n"
+        response = response + "\r\nrefer:\twhois.matthewo.com\r\n"
+        response = response + "\r\ndomain:\t" + TLD + "\r\n"
 
-            # sanitize the input!!!!! Was getting weird escape characters on the end of data_received before this.
-            escapes = ''.join([chr(char) for char in range(1, 32)])
-            self.data_received = self.data_received.translate(None, escapes)
+        # sanitize the input!!!!! Was getting weird escape characters on the end of data_received before this.
+        escapes = ''.join([chr(char) for char in range(1, 32)])
+        self.data_received = self.data_received.translate(None, escapes)
 
-            # check to see if the data received is an IP address
-            if (check_is_ip(self.data_received)):
-                # if the response from the db is not null then parse it and add it to the response
-                if (read_ip(self.data_received) is not None):
-                    response_from_db = read_ip(self.data_received)
-                    ip_address = response_from_db["ip_address"]
-                    reg_contact = response_from_db["registrant_contact"]
-                    admin_contact = response_from_db["admin_contact"]
-                    tech_contact = response_from_db["tech_contact"]
-                    response = response + "IP: " + ip_address + "\r\n"
-                    response = response + "Registrant Contact: " + reg_contact + "\r\n"
-                    response = response + "Admin Contact: " + admin_contact + "\r\n"
-                    response = response + "Technical Contact: " + tech_contact + "\r\n"
-                    self.request.sendall(response)
-                    self.request.close()
+        # check to see if the data received is an IP address
+        if (check_is_ip(self.data_received)):
+            # if the response from the db is not null then parse it and add it to the response
+            if (read_ip(self.data_received) is not None):
+                response_from_db = read_ip(self.data_received)
+                ip_address = response_from_db["ip_address"]
+                reg_contact = response_from_db["registrant_contact"]
+                admin_contact = response_from_db["admin_contact"]
+                tech_contact = response_from_db["tech_contact"]
+                response = response + "IP: " + ip_address + "\r\n"
+                response = response + "Registrant Contact: " + reg_contact + "\r\n"
+                response = response + "Admin Contact: " + admin_contact + "\r\n"
+                response = response + "Technical Contact: " + tech_contact + "\r\n"
+                self.request.sendall(response)
+                self.request.close()
 
-                # let client know the IP was not found
-                else:
-                    # print("The IP was not found on this whois server")
-                    response = response + "\r\nThe IP was not found on this WHOIS server\r\n"
-                    self.request.sendall(response)
-                    self.request.close()
-
-            # check to see if the data received is a domain name
-            elif(check_is_domain(self.data_received)):
-                # if the response from the db is not null then parse it and add it to the response
-                if (read_domain(self.data_received) is not None):
-                    response_from_db = read_domain(self.data_received)
-                    domain_name = response_from_db["domain_name"]
-                    reg_contact = response_from_db["registrant_contact"]
-                    admin_contact = response_from_db["admin_contact"]
-                    tech_contact = response_from_db["tech_contact"]
-                    response = response + "Domain: " + domain_name + "\r\n"
-                    response = response + "Registrant Contact: " + reg_contact + "\r\n"
-                    response = response + "Admin Contact: " + admin_contact + "\r\n"
-                    response = response + "Technical Contact: " + tech_contact + "\r\n"
-                    self.request.sendall(response)
-                    self.request.close()
-
-                # let the client know the domain was not found
-                else:
-                    # print("The DOMAIN was not found on this whois server")
-                    response = response + "\r\nThe domain was not found on this WHOIS server\r\n"
-                    self.request.sendall(response)
-                    self.request.close()
+            # let client know the IP was not found
             else:
-                #This is where we respond that the whois result was not found
-                # print("Not a valid ip or domain name\r\n")
+                # print("The IP was not found on this whois server")
+                response = response + "\r\nThe IP was not found on this WHOIS server\r\n"
+                self.request.sendall(response)
+                self.request.close()
+
+        # check to see if the data received is a domain name
+        elif(check_is_domain(self.data_received)):
+            # if the response from the db is not null then parse it and add it to the response
+            if (read_domain(self.data_received) is not None):
+                response_from_db = read_domain(self.data_received)
+                domain_name = response_from_db["domain_name"]
+                reg_contact = response_from_db["registrant_contact"]
+                admin_contact = response_from_db["admin_contact"]
+                tech_contact = response_from_db["tech_contact"]
+                response = response + "Domain: " + domain_name + "\r\n"
+                response = response + "Registrant Contact: " + reg_contact + "\r\n"
+                response = response + "Admin Contact: " + admin_contact + "\r\n"
+                response = response + "Technical Contact: " + tech_contact + "\r\n"
+                self.request.sendall(response)
+                self.request.close()
+
+            # let the client know the domain was not found
+            else:
+                # print("The DOMAIN was not found on this whois server")
                 response = response + "\r\nThe domain was not found on this WHOIS server\r\n"
                 self.request.sendall(response)
                 self.request.close()
-                break
+        else:
+            #This is where we respond that the whois result was not found
+            # print("Not a valid ip or domain name\r\n")
+            response = response + "\r\nThe domain was not found on this WHOIS server\r\n"
+            self.request.sendall(response)
+            self.request.close()
 
-            #Write the timestamp and IP address of who accessed the service to the log file
-            try:
-                file = open(LOGFILE, 'a+')
-                file.write("[" + strftime("%Y/%m/%d %H:%M:%S") +
-                            "] " + self.client_address[0] + "\r\n")
-                file.close()
-            except IOError:
-                print("There was a problem writing to the logfile.")
+        #Write the timestamp and IP address of who accessed the service to the log file
+        try:
+            file = open(LOGFILE, 'a+')
+            file.write("[" + strftime("%Y/%m/%d %H:%M:%S") +
+                        "] " + self.client_address[0] + "\r\n")
+            file.close()
+        except IOError:
+            print("There was a problem writing to the logfile.")
 
+class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+    pass
 
 if __name__ == '__main__':
+    # variables for our serversocket connection
     LISTEN_ADDRESS = "localhost"
     LISTEN_PORT = 8080
-    server = SocketServer.TCPServer((LISTEN_ADDRESS, LISTEN_PORT), TCPServer)
-    server.serve_forever()
+    try:
+        server = ThreadedTCPServer((LISTEN_ADDRESS, LISTEN_PORT), ThreadedTCPRequestHandler)
+        server_thread = threading.Thread(target=server.serve_forever)
+        server_thread.start()
+    except KeyboardInterrupt:
+        print ("Something went wrong while trying to start the multithreaded server.")
+        sys.exit()
