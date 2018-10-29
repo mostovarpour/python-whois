@@ -8,6 +8,7 @@ import re
 import sys
 import signal
 import pymysql
+import subprocess
 from os.path import expanduser
 from time import strftime
 
@@ -202,6 +203,16 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     pass
 
+def client(ip, port, message):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((ip, port))
+    try:
+        sock.sendall(message)
+        response = sock.recv(1024)
+        print "Received: {}".format(response)
+    finally:
+        sock.close()
+
 if __name__ == '__main__':
     # variables for our serversocket connection
     LISTEN_ADDRESS = "localhost"
@@ -210,6 +221,21 @@ if __name__ == '__main__':
         server = ThreadedTCPServer((LISTEN_ADDRESS, LISTEN_PORT), ThreadedTCPRequestHandler)
         server_thread = threading.Thread(target=server.serve_forever)
         server_thread.start()
+        print ("Server loop running in thread:", server_thread.name)
     except KeyboardInterrupt:
         print ("Something went wrong while trying to start the multithreaded server.")
         sys.exit()
+    
+    # bash_command = "whois -h localhost -p 8080 test.com"
+    # run_bash_command = subprocess.check_output(['bash', '-c', "whois -h localhost -p 8080 test.com"])
+    # print ("Current thread:", server_thread.name)
+    # client(LISTEN_ADDRESS, LISTEN_PORT, subprocess.check_output(['bash', '-c', "whois -h localhost -p 8080 test.com"]))
+
+    # print ("Current thread:", server_thread.name)
+    # client(LISTEN_ADDRESS, LISTEN_PORT, subprocess.check_output(['bash', '-c', "whois -h localhost -p 8080 test0.com"]))
+
+    # print ("Current thread:", server_thread.name)
+    # client(LISTEN_ADDRESS, LISTEN_PORT, subprocess.check_output(['bash', '-c', "whois -h localhost -p 8080 test1.com"]))
+
+    # server.shutdown()
+    # server.server_close()
