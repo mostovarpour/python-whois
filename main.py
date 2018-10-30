@@ -15,6 +15,11 @@ from time import strftime
 # probably want to put this in /var/log/ on a nix system
 LOGFILE = (expanduser("~") + '/whois-service-access.log')
 
+# check to make sure that a sql password was supplied
+if len(sys.argv) == 1:
+    print('You need to pass in the password for MySQL')
+    sys.exit()
+
 # variables for our mysql connection
 MYSQL_HOST = 'localhost'
 MYSQL_USER = 'python_user'
